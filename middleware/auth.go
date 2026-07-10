@@ -8,38 +8,55 @@ import (
 	"book-management/utils"
 )
 
-type ctxKey string
+type contextKey string
 
-const UserIDKey ctxKey = "user_id"
+const (
+	userIDContextKey   contextKey = "user_id"
+	userRoleContextKey contextKey = "user_role"
+)
 
-func Auth(next http.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// Auth middleware - verifies JWT token
+func Auth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, `{"error":"missing token"}`, http.StatusUnauthorized)
+		if authHeader == "" {
+			Error(w, http.StatusUnauthorized, "Authorization header required")
 			return
 		}
 
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		tokenStr = strings.TrimSpace(tokenStr)
+		// Support "Bearer <token>" format
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			Error(w, http.StatusUnauthorized, "Invalid token format")
+			return
+		}
 
-		userID, err := utils.ParseToken(tokenStr)
+		claims, err := utils.ValidateToken(tokenString)
 		if err != nil {
-			http.Error(w, `{"error":"invalid token"}`, http.StatusUnauthorized)
+			Error(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		// Add user info to request context
+		ctx := context.WithValue(r.Context(), userIDContextKey, claims.UserID)
+		ctx = context.WithValue(ctx, userRoleContextKey, claims.Role)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	}
 }
 
+// GetUserID - Get user ID from context
 func GetUserID(r *http.Request) int64 {
-	if v := r.Context().Value(UserIDKey); v != nil {
-		if id, ok := v.(int64); ok {
-			return id
-		}
+	if id, ok := r.Context().Value(userIDContextKey).(int64); ok {
+		return id
 	}
 	return 0
+}
+
+// GetUserRole - Get user role from context
+func GetUserRole(r *http.Request) string {
+	if role, ok := r.Context().Value(userRoleContextKey).(string); ok {
+		return role
+	}
+	return "user"
 }

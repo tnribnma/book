@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"book-management/middleware"
+	//"book-management/middleware"
 	"book-management/models"
 	"book-management/service"
 )
@@ -16,43 +16,28 @@ type BookHandler struct {
 }
 
 func NewBookHandler(db *sql.DB) *BookHandler {
-	return &BookHandler{service: service.NewBookService(db)}
+	return &BookHandler{
+		service: service.NewBookService(db),
+	}
 }
 
-func (h *BookHandler) ListBooks(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
-
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit <= 0 || limit > 100 {
-		limit = 20
-	}
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-
-	books, total, err := h.service.List(r.Context(), userID, limit, page)
-	if err != nil {
-		Error(w, http.StatusInternalServerError, "failed to fetch books")
-		return
-	}
-
-	JSON(w, http.StatusOK, map[string]any{
-		"data": books,
-		"meta": map[string]int{"page": page, "limit": limit, "total": total},
-	})
-}
-
+// CreateBook - Add new book (Librarian/Admin only)
 func (h *BookHandler) CreateBook(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
-
 	var req models.BookRequest
+	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Error(w, http.StatusBadRequest, "invalid request body")
+		Error(w, http.StatusBadRequest, "Invalid JSON")
 		return
 	}
 
-	book, err := h.service.Create(r.Context(), userID, req)
+	// === VALIDATION ===
+	if err := validators.Validate.Struct(req); err != nil {
+		Error(w, http.StatusBadRequest, "Validation failed: "+err.Error())
+		return
+	}
+
+	// If validation passes, proceed to service
+	book, err := h.service.Create(r.Context(), req)
 	if err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -61,38 +46,82 @@ func (h *BookHandler) CreateBook(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, book)
 }
 
-func (h *BookHandler) GetBook(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+// ListBooks - Get all books with search, filter & pagination
+func (h *BookHandler) ListBooks(w http.ResponseWriter, r *http.Request) {
+	filter := models.BookFilter{
+		Search:   r.URL.Query().Get("search"),
+		Author:   r.URL.Query().Get("author"),
+		Status:   r.URL.Query().Get("status"),
+	}
+
+	categoryStr := r.URL.Query().Get("category_id")
+	if categoryStr != "" {
+		if catID, err := strconv.ParseInt(categoryStr, 10, 64); err == nil {
+			filter.Category = catID
+		}
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+
+	books, total, err := h.service.List(r.Context(), filter, limit, offset)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid book id")
+		Error(w, http.StatusInternalServerError, "Failed to fetch books")
 		return
 	}
 
-	book, err := h.service.GetByID(r.Context(), userID, id)
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"data":  books,
+		"meta": map[string]interface{}{
+			"page":  page,
+			"limit": limit,
+			"total": total,
+		},
+	})
+}
+
+// GetBook - Get single book by ID
+func (h *BookHandler) GetBook(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		Error(w, http.StatusNotFound, "book not found")
+		Error(w, http.StatusBadRequest, "Invalid book ID")
+		return
+	}
+
+	book, err := h.service.GetByID(r.Context(), id)
+	if err != nil {
+		Error(w, http.StatusNotFound, "Book not found")
 		return
 	}
 
 	JSON(w, http.StatusOK, book)
 }
 
+// UpdateBook - Update book details
 func (h *BookHandler) UpdateBook(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid book id")
+		Error(w, http.StatusBadRequest, "Invalid book ID")
 		return
 	}
 
 	var req models.BookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Error(w, http.StatusBadRequest, "invalid request body")
+		Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	book, err := h.service.Update(r.Context(), userID, id, req)
+	book, err := h.service.Update(r.Context(), id, req)
 	if err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -101,18 +130,36 @@ func (h *BookHandler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, book)
 }
 
+// DeleteBook - Delete a book (Admin only)
 func (h *BookHandler) DeleteBook(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid book id")
+		Error(w, http.StatusBadRequest, "Invalid book ID")
 		return
 	}
 
-	if err := h.service.Delete(r.Context(), userID, id); err != nil {
+	if err := h.service.Delete(r.Context(), id); err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// SearchBooks - Advanced search (alternative endpoint)
+func (h *BookHandler) SearchBooks(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		h.ListBooks(w, r)
+		return
+	}
+
+	books, err := h.service.Search(r.Context(), query)
+	if err != nil {
+		Error(w, http.StatusInternalServerError, "Search failed")
+		return
+	}
+
+	JSON(w, http.StatusOK, books)
 }

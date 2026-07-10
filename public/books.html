@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Books</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-7xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">📚 My Books</h1>
+      <div class="flex gap-3">
+        <button onclick="logout()" 
+                class="btn btn-danger text-sm">Logout</button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="mb-6">
+      <input type="text" id="searchInput" 
+             placeholder="Search books..." 
+             onkeyup="filterBooks()"
+             class="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+    </div>
+
+    <!-- Add Book Form -->
+    <div class="card mb-8">
+      <h2 class="text-xl font-semibold mb-4">Add New Book</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <input type="text" id="title" placeholder="Book Title" class="border p-3 rounded-lg">
+        <input type="text" id="author" placeholder="Author" class="border p-3 rounded-lg">
+        <input type="number" id="year" placeholder="Year" class="border p-3 rounded-lg">
+        <button onclick="addBook()" 
+                class="btn btn-primary">Add Book</button>
+      </div>
+    </div>
+
+    <!-- Books Table -->
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-4">Your Books</h2>
+      <table class="table" id="booksTable">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Year</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="booksBody" class="text-gray-700"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/books.js"></script>
+</body>
+</html>
