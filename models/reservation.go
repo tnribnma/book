@@ -9,5 +9,5 @@ type Reservation struct {
 	UserID          int64     `json:"user_id"`
 	UserEmail       string    `json:"user_email,omitempty"`
 	ReservationDate time.Time `json:"reservation_date"`
-	Status          string    `json:"status"` // pending, fulfilled, cancelled
+	Status          string    `json:"status"` 
 }

@@ -15,7 +15,7 @@ type Book struct {
 	Quantity        int       `json:"quantity"`
 	AvailableCopies int       `json:"available_copies"`
 	Shelf           string    `json:"shelf,omitempty"`
-	Status          string    `json:"status"` // available, borrowed, lost, reserved
+	Status          string    `json:"status"` 
 	CreatedAt       time.Time `json:"created_at"`
 }
 

@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	//"book-management/middleware"
 	"book-management/models"
 	"book-management/service"
+	"book-management/utils"
+	"book-management/validators" 
 )
 
 type BookHandler struct {
@@ -21,32 +22,28 @@ func NewBookHandler(db *sql.DB) *BookHandler {
 	}
 }
 
-// CreateBook - Add new book (Librarian/Admin only)
 func (h *BookHandler) CreateBook(w http.ResponseWriter, r *http.Request) {
 	var req models.BookRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Error(w, http.StatusBadRequest, "Invalid JSON")
+		utils.Error(w, http.StatusBadRequest, "Invalid JSON")
 		return
 	}
 
-	// === VALIDATION ===
 	if err := validators.Validate.Struct(req); err != nil {
-		Error(w, http.StatusBadRequest, "Validation failed: "+err.Error())
+		utils.Error(w, http.StatusBadRequest, "Validation failed: "+err.Error())
 		return
 	}
 
-	// If validation passes, proceed to service
 	book, err := h.service.Create(r.Context(), req)
 	if err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
+		utils.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	JSON(w, http.StatusCreated, book)
+	utils.JSON(w, http.StatusCreated, book)  
 }
 
-// ListBooks - Get all books with search, filter & pagination
 func (h *BookHandler) ListBooks(w http.ResponseWriter, r *http.Request) {
 	filter := models.BookFilter{
 		Search:   r.URL.Query().Get("search"),
@@ -74,12 +71,12 @@ func (h *BookHandler) ListBooks(w http.ResponseWriter, r *http.Request) {
 
 	books, total, err := h.service.List(r.Context(), filter, limit, offset)
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "Failed to fetch books")
+		utils.Error(w, http.StatusInternalServerError, "Failed to fetch books")
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"data":  books,
+	utils.JSON(w, http.StatusOK, map[string]interface{}{
+		"data": books,
 		"meta": map[string]interface{}{
 			"page":  page,
 			"limit": limit,
@@ -88,66 +85,62 @@ func (h *BookHandler) ListBooks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetBook - Get single book by ID
 func (h *BookHandler) GetBook(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "Invalid book ID")
+		utils.Error(w, http.StatusBadRequest, "Invalid book ID")
 		return
 	}
 
 	book, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
-		Error(w, http.StatusNotFound, "Book not found")
+		utils.Error(w, http.StatusNotFound, "Book not found")
 		return
 	}
 
-	JSON(w, http.StatusOK, book)
+	utils.JSON(w, http.StatusOK, book)
 }
 
-// UpdateBook - Update book details
 func (h *BookHandler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "Invalid book ID")
+		utils.Error(w, http.StatusBadRequest, "Invalid book ID")
 		return
 	}
 
 	var req models.BookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Error(w, http.StatusBadRequest, "Invalid request body")
+		utils.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	book, err := h.service.Update(r.Context(), id, req)
 	if err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
+		utils.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	JSON(w, http.StatusOK, book)
+	utils.JSON(w, http.StatusOK, book)
 }
 
-// DeleteBook - Delete a book (Admin only)
 func (h *BookHandler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "Invalid book ID")
+		utils.Error(w, http.StatusBadRequest, "Invalid book ID")
 		return
 	}
 
 	if err := h.service.Delete(r.Context(), id); err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
+		utils.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// SearchBooks - Advanced search (alternative endpoint)
 func (h *BookHandler) SearchBooks(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	if query == "" {
@@ -157,9 +150,9 @@ func (h *BookHandler) SearchBooks(w http.ResponseWriter, r *http.Request) {
 
 	books, err := h.service.Search(r.Context(), query)
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "Search failed")
+		utils.Error(w, http.StatusInternalServerError, "Search failed")
 		return
 	}
 
-	JSON(w, http.StatusOK, books)
+	utils.JSON(w, http.StatusOK, books)
 }

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"book-management/middleware"
-	//"book-management/models"
 	"book-management/service"
 )
 
@@ -20,6 +19,10 @@ func NewReservationHandler(db *sql.DB) *ReservationHandler {
 
 func (h *ReservationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
+	if userID == 0 {
+		Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 
 	var req struct {
 		BookID int64 `json:"book_id"`

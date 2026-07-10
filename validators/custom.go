@@ -7,31 +7,29 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// Custom validators for the library management system
+var Validate *validator.Validate
 
-func RegisterCustomValidators(v *validator.Validate) {
-	// ISBN validator (10 or 13 digits)
-	v.RegisterValidation("isbn", func(fl validator.FieldLevel) bool {
-		isbn := fl.Field().String()
-		if isbn == "" {
-			return true // optional field
-		}
-		// Remove hyphens and spaces
-		isbn = strings.ReplaceAll(isbn, "-", "")
-		isbn = strings.ReplaceAll(isbn, " ", "")
+func Init() {
+	Validate = validator.New()
+	Validate.RegisterValidation("isbn", isbnValidator)
+	Validate.RegisterValidation("shelf", shelfValidator)
+}
 
-		// Check for 10 or 13 digits
-		match, _ := regexp.MatchString(`^\d{10}$|^\d{13}$`, isbn)
-		return match
-	})
+func isbnValidator(fl validator.FieldLevel) bool {
+	isbn := fl.Field().String()
+	if isbn == "" {
+		return true 
+	}
 
-	// Shelf code validator (example: A-12, B-05)
-	v.RegisterValidation("shelf", func(fl validator.FieldLevel) bool {
-		shelf := fl.Field().String()
-		if shelf == "" {
-			return true
-		}
-		match, _ := regexp.MatchString(`^[A-Z]-\d{1,3}$`, shelf)
-		return match
-	})
+	clean := strings.ReplaceAll(strings.ReplaceAll(isbn, "-", ""), " ", "")
+	return len(clean) == 10 || len(clean) == 13
+}
+
+func shelfValidator(fl validator.FieldLevel) bool {
+	shelf := fl.Field().String()
+	if shelf == "" {
+		return true
+	}
+	match, _ := regexp.MatchString(`^[A-Z]-\d{1,3}$`, shelf)
+	return match
 }

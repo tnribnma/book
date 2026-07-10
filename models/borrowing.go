@@ -11,13 +11,13 @@ type Borrowing struct {
 	IssueDate   time.Time  `json:"issue_date"`
 	DueDate     time.Time  `json:"due_date"`
 	ReturnDate  *time.Time `json:"return_date,omitempty"`
-	Status      string     `json:"status"` // borrowed, returned, overdue, lost
+	Status      string     `json:"status"` 
 	FineAmount  float64    `json:"fine_amount"`
 }
 
 type BorrowRequest struct {
 	BookID  int64     `json:"book_id" validate:"required"`
-	DueDays int       `json:"due_days" validate:"required,min=1,max=60"` // default 14 days
+	DueDays int       `json:"due_days" validate:"required,min=1,max=60"` 
 }
 
 type ReturnRequest struct {

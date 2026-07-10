@@ -76,11 +76,10 @@ func OpenDB(connStr string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("✅ Successfully connected to PostgreSQL")
+	log.Println("Successfully connected to PostgreSQL")
 	return db, nil
 }
 
-// Helper functions
 func getEnv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -92,5 +91,5 @@ func mustGetEnv(key string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-	panic(fmt.Sprintf("❌ Required environment variable '%s' is not set", key))
+	panic(fmt.Sprintf("Required environment variable '%s' is not set", key))
 }

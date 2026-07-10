@@ -51,11 +51,23 @@ func (s *UserService) Login(ctx context.Context, req models.UserLoginRequest) (s
 }
 
 func (s *UserService) GetProfile(ctx context.Context, userID int64) (models.UserProfile, error) {
-	// TODO: Join with borrowings
 	user, err := s.repo.GetByID(ctx, userID)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
 
 	return models.UserProfile{User: user}, nil
+}
+
+func (s *UserService) ListUsers(ctx context.Context) ([]models.User, error) {
+	return s.repo.List(ctx)
+}
+
+func (s *UserService) UpdateRole(ctx context.Context, id int64, role string) error {
+	switch role {
+	case "user", "librarian", "admin":
+	default:
+		return errors.New("invalid role")
+	}
+	return s.repo.UpdateRole(ctx, id, role)
 }

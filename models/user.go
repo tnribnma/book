@@ -6,7 +6,7 @@ type User struct {
 	ID           int64     `json:"id"`
 	Email        string    `json:"email"`
 	FullName     string    `json:"full_name,omitempty"`
-	Role         string    `json:"role"` // admin, librarian, user
+	Role         string    `json:"role"` 
 	CreatedAt    time.Time `json:"created_at"`
 }
 

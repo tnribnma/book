@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"book-management/middleware"
-	"book-management/models"
+	//"book-management/models"
 	"book-management/service"
 )
 
@@ -16,7 +16,7 @@ type UserHandler struct {
 }
 
 func NewUserHandler(db *sql.DB) *UserHandler {
-	return &UserHandler{service: service.NewUserService(nil)} // pass repo
+	return &UserHandler{service: service.NewUserService(nil)} 
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
@@ -29,9 +29,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, profile)
 }
 
-// Admin only
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	// Add pagination later
+func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {	
 	users, err := h.service.ListUsers(r.Context())
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "failed to fetch users")

@@ -7,66 +7,91 @@ import (
 
 	"book-management/models"
 	"book-management/repository"
+	"database/sql"
 )
 
 type BorrowingService struct {
-	bookRepo      *repository.BookRepository
 	borrowingRepo *repository.BorrowingRepository
+	bookRepo      *repository.BookRepository
 }
 
 func NewBorrowingService(db *sql.DB) *BorrowingService {
 	return &BorrowingService{
-		bookRepo:      repository.NewBookRepository(db),
 		borrowingRepo: repository.NewBorrowingRepository(db),
+		bookRepo:      repository.NewBookRepository(db),
 	}
 }
 
-func (s *BorrowingService) IssueBook(ctx context.Context, req models.BorrowRequest, userID int64) (models.Borrowing, error) {
+func (s *BorrowingService) Borrow(ctx context.Context, userID int64, req models.BorrowRequest) (models.Borrowing, error) {
+	if req.BookID == 0 {
+		return models.Borrowing{}, errors.New("book_id is required")
+	}
+	if req.DueDays < 1 || req.DueDays > 60 {
+		return models.Borrowing{}, errors.New("due_days must be between 1 and 60")
+	}
+
 	book, err := s.bookRepo.GetByID(ctx, req.BookID)
 	if err != nil {
 		return models.Borrowing{}, errors.New("book not found")
 	}
-
 	if book.AvailableCopies <= 0 {
-		return models.Borrowing{}, errors.New("no available copies")
+		return models.Borrowing{}, errors.New("book is not available")
 	}
 
 	dueDate := time.Now().AddDate(0, 0, req.DueDays)
-	if dueDate.Before(time.Now()) {
-		return models.Borrowing{}, errors.New("due date must be in future")
-	}
 
 	borrowing := models.Borrowing{
 		BookID:  req.BookID,
-		UserID:  userID,
+		UserID:  userID,          
 		DueDate: dueDate,
+		Status:  "borrowed",
 	}
 
-	b, err := s.borrowingRepo.Create(ctx, borrowing)
+	created, err := s.borrowingRepo.Create(ctx, borrowing)
 	if err != nil {
-		return b, err
+		return models.Borrowing{}, err
 	}
 
-	// Update book availability
-	s.bookRepo.UpdateAvailability(ctx, req.BookID, -1)
+	err = s.bookRepo.UpdateAvailability(ctx, req.BookID, -1)
+	if err != nil {
+		return models.Borrowing{}, err
+	}
 
-	return b, nil
+	return created, nil
 }
 
-func (s *BorrowingService) ReturnBook(ctx context.Context, borrowingID int64) (float64, error) {
-	fine := 0.0
-	// TODO: Calculate overdue fine (e.g. 50 per day)
-
-	err := s.borrowingRepo.ReturnBook(ctx, borrowingID, fine)
-	if err != nil {
-		return 0, err
+func (s *BorrowingService) Return(ctx context.Context, req models.ReturnRequest) error {
+	if req.BorrowingID == 0 {
+		return errors.New("borrowing_id is required")
 	}
 
-	// Increase available copies (need book_id)
-	return fine, nil
+	borrowing, err := s.borrowingRepo.GetByID(ctx, req.BorrowingID)
+	if err != nil {
+		return err
+	}
+
+	fine := 0.0
+	if borrowing.DueDate.Before(time.Now()) && borrowing.Status == "borrowed" {
+		daysOverdue := int(time.Since(borrowing.DueDate).Hours() / 24)
+		fine = float64(daysOverdue) * 1.0 
+	}
+
+	err = s.borrowingRepo.ReturnBook(ctx, req.BorrowingID, fine)
+	if err != nil {
+		return err
+	}
+
+	return s.bookRepo.UpdateAvailability(ctx, borrowing.BookID, 1)
 }
 
 func (s *BorrowingService) GetUserBorrowings(ctx context.Context, userID int64) ([]models.Borrowing, error) {
-	// Implement in repository
-	return nil, nil
+	return s.borrowingRepo.GetUserBorrowings(ctx, userID)
+}
+
+func (s *BorrowingService) GetOverdue(ctx context.Context) ([]models.Borrowing, error) {
+	return s.borrowingRepo.GetOverdue(ctx)
+}
+
+func (s *BorrowingService) GetByID(ctx context.Context, id int64) (models.Borrowing, error) {
+	return s.borrowingRepo.GetByID(ctx, id)
 }

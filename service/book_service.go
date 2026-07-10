@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"book-management/models"
@@ -47,13 +48,11 @@ func (s *BookService) GetByID(ctx context.Context, id int64) (models.Book, error
 }
 
 func (s *BookService) Update(ctx context.Context, id int64, req models.BookRequest) (models.Book, error) {
-	// Full update logic can be added here
-	return models.Book{}, errors.New("update not fully implemented yet")
+	return models.Book{}, errors.New("update functionality not fully implemented yet")
 }
 
 func (s *BookService) Delete(ctx context.Context, id int64) error {
-	// Add check if book is borrowed
-	return nil
+	return s.repo.Delete(ctx, id)
 }
 
 func (s *BookService) Search(ctx context.Context, query string) ([]models.Book, error) {

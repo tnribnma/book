@@ -42,3 +42,27 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (models.User, er
 		&user.ID, &user.Email, &user.FullName, &user.Role, &user.CreatedAt)
 	return user, err
 }
+
+func (r *UserRepository) List(ctx context.Context) ([]models.User, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, email, full_name, role, created_at FROM users ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Email, &u.FullName, &u.Role, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
+func (r *UserRepository) UpdateRole(ctx context.Context, id int64, role string) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE users SET role = $1 WHERE id = $2`, role, id)
+	return err
+}
