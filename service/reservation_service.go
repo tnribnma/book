@@ -2,11 +2,18 @@ package service
 
 import (
 	"context"
+<<<<<<< HEAD
 	"fmt"
+=======
+	"database/sql"
+	"errors"
+
+>>>>>>> 9643364dd4f1350f52d70f9a28ef341da82933d8
 	"book-management/models"
 	"book-management/repository"
 )
 
+<<<<<<< HEAD
 type ReservationService interface {
 	CreateReservation(ctx context.Context, bookID, userID int64) (*models.Reservation, error)
 	GetUserReservations(ctx context.Context, userID int64) ([]models.Reservation, error)
@@ -84,4 +91,32 @@ func (s *reservationService) FulfillReservation(ctx context.Context, reservation
 	}
 
 	return s.reservationRepo.Fulfill(ctx, reservationID, reservation.BookID)
+=======
+type ReservationService struct {
+	bookRepo        *repository.BookRepository
+	reservationRepo *repository.ReservationRepository
+}
+
+func NewReservationService(db *sql.DB) *ReservationService {
+	return &ReservationService{
+		bookRepo:        repository.NewBookRepository(db),
+		reservationRepo: repository.NewReservationRepository(db),
+	}
+}
+
+func (s *ReservationService) Create(ctx context.Context, bookID, userID int64) (models.Reservation, error) {
+	book, err := s.bookRepo.GetByID(ctx, bookID)
+	if err != nil {
+		return models.Reservation{}, errors.New("book not found")
+	}
+
+	if book.AvailableCopies > 0 {
+		return models.Reservation{}, errors.New("book is available, no need to reserve")
+	}
+	
+	return s.reservationRepo.Create(ctx, models.Reservation{
+		BookID: bookID,
+		UserID: userID,
+	})
+>>>>>>> 9643364dd4f1350f52d70f9a28ef341da82933d8
 }
