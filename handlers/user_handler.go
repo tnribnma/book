@@ -7,15 +7,16 @@ import (
 	"strconv"
 
 	"book-management/middleware"
+	"book-management/repository"
 	"book-management/service"
 )
 
 type UserHandler struct {
-	service *service.UserService
+	service service.UserService
 }
 
 func NewUserHandler(db *sql.DB) *UserHandler {
-	return &UserHandler{service: service.NewUserService(nil)} 
+	return &UserHandler{service: service.NewUserService(repository.NewUserRepository(db))}
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, profile)
 }
 
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {	
+func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.service.ListUsers(r.Context())
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "failed to fetch users")
@@ -46,7 +47,7 @@ func (h *UserHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	err := h.service.UpdateRole(r.Context(), id, req.Role)
+	err := h.service.UpdateUser(r.Context(), id, "", req.Role)
 	if err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return

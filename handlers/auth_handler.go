@@ -11,7 +11,7 @@ import (
 )
 
 type AuthHandler struct {
-	userService *service.UserService
+	userService service.UserService
 }
 
 func NewAuthHandler(db *sql.DB) *AuthHandler {
@@ -27,13 +27,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := h.userService.Register(r.Context(), req)
+	user, err := h.userService.Register(r.Context(), req.Email, req.Password, req.FullName)
 	if err != nil {
 		Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]any{"id": userID, "email": req.Email})
+	JSON(w, http.StatusCreated, map[string]any{"id": user.ID, "email": user.Email})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -43,14 +43,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, user, err := h.userService.Login(r.Context(), req)
+	user, err := h.userService.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		Error(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
 	JSON(w, http.StatusOK, map[string]any{
-		"token": token,
-		"user":  user,
+		"user": user,
 	})
 }
