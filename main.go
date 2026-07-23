@@ -12,6 +12,8 @@ import (
 	"book-management/config"
 	"book-management/handlers"
 	"book-management/middleware"
+	"book-management/repository"
+	"book-management/service"
 	"book-management/utils"
 	"book-management/validators"
 
@@ -38,13 +40,28 @@ func main() {
 	}
 	defer db.Close()
 
-	authHandler := handlers.NewAuthHandler(db)
-	bookHandler := handlers.NewBookHandler(db)
-	userHandler := handlers.NewUserHandler(db)
-	categoryHandler := handlers.NewCategoryHandler(db)
-	borrowingHandler := handlers.NewBorrowingHandler(db)
-	reportHandler := handlers.NewReportHandler(db)
-	reservationHandler := handlers.NewReservationHandler(db)
+	userRepo := repository.NewUserRepository(db)
+	bookRepo := repository.NewBookRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
+	borrowingRepo := repository.NewBorrowingRepository(db)
+	reservationRepo := repository.NewReservationRepository(db)
+	reportRepo := repository.NewReportRepository(db)
+
+	authService := service.NewUserService(userRepo) 
+	userService := service.NewUserService(userRepo)
+	bookService := service.NewBookService(bookRepo)
+	categoryService := service.NewCategoryService(categoryRepo, bookRepo)
+	borrowingService := service.NewBorrowingService(borrowingRepo, bookRepo)
+	reservationService := service.NewReservationService(reservationRepo, bookRepo)
+	reportService := service.NewReportService(reportRepo, bookRepo, borrowingRepo)
+
+	authHandler := handlers.NewAuthHandler(authService)
+	bookHandler := handlers.NewBookHandler(bookService)
+	userHandler := handlers.NewUserHandler(userService)
+	categoryHandler := handlers.NewCategoryHandler(categoryService)
+	borrowingHandler := handlers.NewBorrowingHandler(borrowingService)
+	reservationHandler := handlers.NewReservationHandler(reservationService)
+	reportHandler := handlers.NewReportHandler(reportService)
 
 	mux := http.NewServeMux()
 
@@ -54,6 +71,7 @@ func main() {
 
 	mux.Handle("GET /books", middleware.Auth(middleware.CORS(bookHandler.ListBooks)))
 	mux.Handle("GET /books/{id}", middleware.Auth(middleware.CORS(bookHandler.GetBook)))
+
 	mux.Handle("POST /books", middleware.Auth(
 		middleware.CORS(
 			middleware.Role("librarian", "admin")(bookHandler.CreateBook),
@@ -81,6 +99,8 @@ func main() {
 	mux.Handle("POST /return", middleware.Auth(middleware.CORS(borrowingHandler.ReturnBook)))
 	mux.Handle("GET /my-borrowings", middleware.Auth(middleware.CORS(borrowingHandler.GetMyBorrowings)))
 
+	mux.Handle("POST /reserve", middleware.Auth(middleware.CORS(reservationHandler.Create)))
+
 	mux.Handle("GET /profile", middleware.Auth(middleware.CORS(userHandler.GetProfile)))
 
 	mux.Handle("GET /admin/users", middleware.Auth(
@@ -94,8 +114,6 @@ func main() {
 			middleware.Role("admin", "librarian")(reportHandler.GetDashboard),
 		),
 	))
-
-	mux.Handle("POST /reserve", middleware.Auth(middleware.CORS(reservationHandler.Create)))
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
