@@ -5,14 +5,9 @@ import "time"
 type User struct {
 	ID           int64     `json:"id"`
 	Email        string    `json:"email"`
-<<<<<<< HEAD
 	PasswordHash string    `json:"-"` 
 	FullName     string    `json:"full_name"`
 	Role         string    `json:"role"`
-=======
-	FullName     string    `json:"full_name,omitempty"`
-	Role         string    `json:"role"` 
->>>>>>> 9643364dd4f1350f52d70f9a28ef341da82933d8
 	CreatedAt    time.Time `json:"created_at"`
 }
 
