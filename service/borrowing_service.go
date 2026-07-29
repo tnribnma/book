@@ -55,6 +55,7 @@ func (s *borrowingService) IssueBook(ctx context.Context, bookID, userID int64) 
 	if err := s.borrowingRepo.IssueBook(ctx, borrowing); err != nil {
 		return err
 	}
+
 	return s.bookRepo.UpdateAvailability(ctx, bookID, -1)
 }
 
@@ -71,5 +72,4 @@ func (s *borrowingService) GetMyBorrowings(ctx context.Context, userID int64) ([
 
 func (s *borrowingService) GetOverdueBorrowings(ctx context.Context) ([]models.Borrowing, error) {
 	return s.borrowingRepo.GetOverdueBorrowings(ctx)
-
 }
