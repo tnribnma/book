@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"database/sql"
 	"net/http"
 	"strconv"
 
-	"book-management/repository"
 	"book-management/service"
 )
 
@@ -13,14 +11,8 @@ type ReportHandler struct {
 	service service.ReportService
 }
 
-func NewReportHandler(db *sql.DB) *ReportHandler {
-	return &ReportHandler{
-		service: service.NewReportService(
-			repository.NewReportRepository(db),
-			repository.NewBookRepository(db),
-			repository.NewBorrowingRepository(db),
-		),
-	}
+func NewReportHandler(service service.ReportService) *ReportHandler {
+	return &ReportHandler{	service: service}
 }
 
 func (h *ReportHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {

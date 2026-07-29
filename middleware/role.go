@@ -6,9 +6,9 @@ import (
 	"book-management/utils"
 )
 
-func Role(allowedRoles ...string) func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func Role(allowedRoles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userRole := GetUserRole(r)
 
 			for _, allowed := range allowedRoles {
@@ -24,6 +24,6 @@ func Role(allowedRoles ...string) func(http.HandlerFunc) http.HandlerFunc {
 			}
 
 			utils.Error(w, http.StatusForbidden, "Insufficient permissions")
-		}
+		})
 	}
 }

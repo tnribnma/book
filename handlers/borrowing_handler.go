@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 
 	"book-management/middleware"
-	"book-management/repository"
 	"book-management/service"
 )
 
@@ -14,13 +12,8 @@ type BorrowingHandler struct {
 	service service.BorrowingService
 }
 
-func NewBorrowingHandler(db *sql.DB) *BorrowingHandler {
-	return &BorrowingHandler{
-		service: service.NewBorrowingService(
-			repository.NewBorrowingRepository(db),
-			repository.NewBookRepository(db),
-		),
-	}
+func NewBorrowingHandler(service service.BorrowingService) *BorrowingHandler {
+	return &BorrowingHandler{	service: service}
 }
 
 func (h *BorrowingHandler) IssueBook(w http.ResponseWriter, r *http.Request) {

@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
-
-	"book-management/repository"
 	"book-management/service"
 )
 
@@ -13,13 +10,8 @@ type CategoryHandler struct {
 	service service.CategoryService
 }
 
-func NewCategoryHandler(db *sql.DB) *CategoryHandler {
-	return &CategoryHandler{
-		service: service.NewCategoryService(
-			repository.NewCategoryRepository(db),
-			repository.NewBookRepository(db),
-		),
-	}
+func NewCategoryHandler(service service.CategoryService) *CategoryHandler {
+	return &CategoryHandler{ service: service}
 }
 
 func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {

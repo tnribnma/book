@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"book-management/middleware"
-	"book-management/repository"
 	"book-management/service"
 )
 
@@ -15,8 +13,8 @@ type UserHandler struct {
 	service service.UserService
 }
 
-func NewUserHandler(db *sql.DB) *UserHandler {
-	return &UserHandler{service: service.NewUserService(repository.NewUserRepository(db))}
+func NewUserHandler(service service.UserService) *UserHandler {
+	return &UserHandler{service: service}
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {

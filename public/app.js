@@ -127,7 +127,11 @@ function initAuth() {
   $('#registerForm').addEventListener('submit', async e => {
     e.preventDefault();
     const f = new FormData(e.target);
-    const body = { username: f.get('username'), email: f.get('email'), password: f.get('password') };
+    const body = {
+      full_name: f.get('username'),
+      email: f.get('email'),
+      password: f.get('password')
+    };
     try {
       await api('POST', '/users/register', body, { auth: false });
       toast('Registered. Now log in.');

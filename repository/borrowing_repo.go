@@ -49,7 +49,6 @@ func (r *borrowingRepo) IssueBook(ctx context.Context, borrowing *models.Borrowi
 		return fmt.Errorf("failed to issue book: %w", err)
 	}
 
-	// Decrease available copies
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE books 
 		SET available_copies = available_copies - 1,
@@ -85,7 +84,6 @@ func (r *borrowingRepo) ReturnBook(ctx context.Context, bookID, userID int64) er
 		return fmt.Errorf("failed to return book: %w", err)
 	}
 
-	// Increase available copies
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE books 
 		SET available_copies = available_copies + 1,

@@ -15,8 +15,8 @@ const (
 	userRoleContextKey contextKey = "user_role"
 )
 
-func Auth(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			utils.Error(w, http.StatusUnauthorized, "Authorization header required")
@@ -39,7 +39,7 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 		ctx = context.WithValue(ctx, userRoleContextKey, claims.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}
+	})
 }
 
 func GetUserID(r *http.Request) int64 {

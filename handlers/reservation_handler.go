@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"book-management/middleware"
-	"book-management/repository"
 	"book-management/service"
 )
 
@@ -15,13 +13,8 @@ type ReservationHandler struct {
 	service service.ReservationService
 }
 
-func NewReservationHandler(db *sql.DB) *ReservationHandler {
-	return &ReservationHandler{
-		service: service.NewReservationService(
-			repository.NewReservationRepository(db),
-			repository.NewBookRepository(db),
-		),
-	}
+func NewReservationHandler(service service.ReservationService) *ReservationHandler {
+	return &ReservationHandler{	service: service}
 }
 
 func (h *ReservationHandler) Create(w http.ResponseWriter, r *http.Request) {

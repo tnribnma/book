@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"book-management/middleware"
 	"book-management/models"
-	"book-management/repository"
 	"book-management/service"
 	"book-management/validators"
 )
@@ -17,10 +15,8 @@ type BookHandler struct {
 	service service.BookService
 }
 
-func NewBookHandler(db *sql.DB) *BookHandler {
-	return &BookHandler{
-		service: service.NewBookService(repository.NewBookRepository(db)),
-	}
+func NewBookHandler(service service.BookService) *BookHandler {
+	return &BookHandler{service: service}
 }
 
 func (h *BookHandler) CreateBook(w http.ResponseWriter, r *http.Request) {

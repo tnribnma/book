@@ -49,7 +49,6 @@ func (r *reservationRepo) Create(ctx context.Context, reservation *models.Reserv
 		return fmt.Errorf("failed to create reservation: %w", err)
 	}
 
-	// Update book status to reserved
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE books 
 		SET status = 'reserved' 
@@ -143,7 +142,6 @@ func (r *reservationRepo) Fulfill(ctx context.Context, reservationID, bookID int
 	}
 	defer tx.Rollback()
 
-	// Update reservation status
 	_, err = tx.ExecContext(ctx, `
 		UPDATE reservations 
 		SET status = 'fulfilled' 
@@ -152,7 +150,6 @@ func (r *reservationRepo) Fulfill(ctx context.Context, reservationID, bookID int
 		return err
 	}
 
-	// Update book status
 	_, err = tx.ExecContext(ctx, `
 		UPDATE books 
 		SET status = 'available' 

@@ -21,7 +21,6 @@ type reportRepo struct {
 	db *sql.DB
 }
 
-// NewReportRepository - Constructor
 func NewReportRepository(db *sql.DB) ReportRepository {
 	return &reportRepo{db: db}
 }
@@ -29,31 +28,26 @@ func NewReportRepository(db *sql.DB) ReportRepository {
 func (r *reportRepo) GetDashboardStats(ctx context.Context) (*models.DashboardStats, error) {
 	stats := &models.DashboardStats{}
 
-	// Total Books
 	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM books").Scan(&stats.TotalBooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get total books: %w", err)
 	}
 
-	// Available Books
 	err = r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM books WHERE status = 'available'").Scan(&stats.AvailableBooks)
 	if err != nil {
 		return nil, err
 	}
 
-	// Borrowed Books
 	err = r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM books WHERE status = 'borrowed'").Scan(&stats.BorrowedBooks)
 	if err != nil {
 		return nil, err
 	}
 
-	// Active Borrowings
 	err = r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM borrowings WHERE status = 'borrowed'").Scan(&stats.ActiveBorrowings)
 	if err != nil {
 		return nil, err
 	}
 
-	// Overdue Borrowings
 	err = r.db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM borrowings 
 		WHERE status = 'borrowed' AND due_date < NOW()`).Scan(&stats.OverdueBorrowings)
@@ -61,13 +55,11 @@ func (r *reportRepo) GetDashboardStats(ctx context.Context) (*models.DashboardSt
 		return nil, err
 	}
 
-	// Total Users
 	err = r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&stats.TotalUsers)
 	if err != nil {
 		return nil, err
 	}
 
-	// Total Reservations
 	err = r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM reservations WHERE status = 'pending'").Scan(&stats.PendingReservations)
 	if err != nil {
 		return nil, err
@@ -98,7 +90,7 @@ func (r *reportRepo) GetPopularBooks(ctx context.Context, limit int) ([]models.B
 		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &borrowCount); err != nil {
 			return nil, err
 		}
-		b.Quantity = borrowCount // Using Quantity field temporarily for borrow count
+		b.Quantity = borrowCount 
 		books = append(books, b)
 	}
 

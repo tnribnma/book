@@ -20,7 +20,6 @@ type userRepo struct {
 	db *sql.DB
 }
 
-// NewUserRepository - Constructor (Dependency Injection)
 func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepo{db: db}
 }

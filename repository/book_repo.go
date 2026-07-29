@@ -45,7 +45,7 @@ func (r *bookRepo) List(ctx context.Context, filter models.BookFilter) ([]models
 	argCount := 1
 
 	if filter.Search != "" {
-		query += fmt.Sprintf(" AND (b.title ILIKE $%d OR b.author ILIKE $%d)", argCount, argCount)
+		query += fmt.Sprintf(" AND (b.title I LIKE $%d OR b.author I LIKE $%d)", argCount, argCount)
 		args = append(args, "%"+filter.Search+"%")
 		argCount++
 	}

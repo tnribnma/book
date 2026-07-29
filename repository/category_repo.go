@@ -20,7 +20,6 @@ type categoryRepo struct {
 	db *sql.DB
 }
 
-// NewCategoryRepository - Constructor (Dependency Injection)
 func NewCategoryRepository(db *sql.DB) CategoryRepository {
 	return &categoryRepo{db: db}
 }
