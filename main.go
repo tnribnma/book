@@ -138,6 +138,14 @@ func main() {
 		),
 	)
 
+	mux.Handle("PUT /admin/users/{id}/role",
+		middleware.Auth(
+			middleware.Role("admin")(
+				http.HandlerFunc(userHandler.UpdateRole),
+			),
+		),
+	)
+
 	mux.Handle("GET /reports/dashboard",
 		middleware.Auth(
 			middleware.Role("admin", "librarian")(

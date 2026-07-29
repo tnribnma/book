@@ -67,3 +67,12 @@ INSERT INTO categories (name, description) VALUES
 ('History', 'History & Biography'),
 ('Programming', 'Computer Science & Programming')
 ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO users (email, password_hash, full_name, role)
+VALUES (
+  'admin@library.local',
+  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 
+  'System Admin',
+  'admin'
+)
+ON CONFLICT (email) DO NOTHING;
