@@ -140,3 +140,8 @@ func (r *userRepo) Update(ctx context.Context, user *models.User) error {
 
 	return nil
 }
+func (r *userRepo) UpdateRole(ctx context.Context, id int64, role string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET role = $1 WHERE id = $2`, role, id)
+	return err
+}

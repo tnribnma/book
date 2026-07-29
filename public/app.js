@@ -83,6 +83,18 @@ function setSession(token, user) {
   renderSession();
 }
 
+function loadAuthenticatedData() {
+  loadBooks();
+  loadCategories();
+  loadBorrowings();
+  if (state.user && state.user.role === 'admin') {
+    loadUsers();
+  }
+  if (state.user && (state.user.role === 'admin' || state.user.role === 'librarian')) {
+    loadDashboard();
+  }
+}
+
 function renderSession() {
   const label = $('#userLabel');
   const logoutBtn = $('#logoutBtn');
@@ -95,6 +107,29 @@ function renderSession() {
     label.textContent = 'not signed in';
     logoutBtn.classList.add('hidden');
   }
+  updateRoleUI();
+}
+
+function updateRoleUI() {
+  const role = pick(state.user || {}, ['role'], null);
+  const isAdmin = role === 'admin';
+  const isLibrarian = role === 'librarian';
+  const isLibrarianOrAdmin = isLibrarian || isAdmin;
+
+  // Hide/show forms based on role
+  const createBookCard = $('#createBookForm')?.closest('.card');
+  if (createBookCard) createBookCard.classList.toggle('hidden', !isLibrarianOrAdmin);
+
+  const createCatCard = $('#createCategoryForm')?.closest('.card');
+  if (createCatCard) createCatCard.classList.toggle('hidden', !isLibrarianOrAdmin);
+
+  // Hide admin tab if not admin
+  const adminTab = $all('.tab-btn').find(btn => btn.dataset.tab === 'admin');
+  if (adminTab) adminTab.classList.toggle('hidden', !isAdmin);
+
+  // Hide reports tab if not admin/librarian
+  const reportsTab = $all('.tab-btn').find(btn => btn.dataset.tab === 'reports');
+  if (reportsTab) reportsTab.classList.toggle('hidden', !isLibrarianOrAdmin);
 }
 
 function decodeJwtPayload(token) {
@@ -112,6 +147,16 @@ function initTabs() {
       $all('.panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       $('#tab-' + btn.dataset.tab).classList.add('active');
+      
+      // Auto-load data for tabs that need it
+      if (!state.token) return;
+      const tab = btn.dataset.tab;
+      if (tab === 'books') loadBooks();
+      if (tab === 'categories') loadCategories();
+      if (tab === 'borrowing') loadBorrowings();
+      if (tab === 'admin') loadUsers();
+      if (tab === 'reports') loadDashboard();
+      if (tab === 'profile') loadProfile();
     });
   });
 }
@@ -152,7 +197,8 @@ function initAuth() {
       setSession(token, user);
       toast('Logged in.');
       e.target.reset();
-      loadProfile();
+      await loadProfile();
+      loadAuthenticatedData();
     } catch {  }
   });
 
@@ -437,10 +483,11 @@ function init() {
   initLog();
   renderSession();
   if (state.token) {
-    loadProfile();
+    (async () => {
+      await loadProfile();
+      loadAuthenticatedData();
+    })();
   }
-  loadBooks();
-  loadCategories();
 }
 
 document.addEventListener('DOMContentLoaded', init);

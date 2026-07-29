@@ -52,7 +52,10 @@ func (s *borrowingService) IssueBook(ctx context.Context, bookID, userID int64) 
 		Status:  "borrowed",
 	}
 
-	return s.borrowingRepo.IssueBook(ctx, borrowing)
+	if err := s.borrowingRepo.IssueBook(ctx, borrowing); err != nil {
+		return err
+	}
+	return s.bookRepo.UpdateAvailability(ctx, bookID, -1)
 }
 
 func (s *borrowingService) ReturnBook(ctx context.Context, bookID, userID int64) error {
