@@ -154,6 +154,16 @@ func main() {
 		),
 	)
 
+	mux.Handle("GET /my-reservations",
+		middleware.Auth(http.HandlerFunc(reservationHandler.GetMyReservations)),
+	)
+ 
+	mux.Handle("DELETE /reservations/{id}",
+		middleware.Auth(http.HandlerFunc(reservationHandler.Cancel)),
+	)
+ 
+	mux.Handle("/app/", http.StripPrefix("/app/", http.FileServer(http.Dir("public"))))
+
 	srv := &http.Server{
 	Addr:         ":" + cfg.Server.Port,
 	Handler:      middleware.CORS(mux),

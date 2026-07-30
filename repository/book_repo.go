@@ -34,12 +34,20 @@ func NewBookRepository(db *sql.DB) BookRepository {
 
 func (r *bookRepo) List(ctx context.Context, filter models.BookFilter) ([]models.Book, error) {
 	query := `
-		SELECT b.id, b.title, b.author, b.isbn, b.category_id, COALESCE(c.name, '') as category_name,
-		       b.publisher, b.edition, b.published_year, b.quantity, b.available_copies,
-		       b.shelf, b.status, b.created_at 
-		FROM books b 
-		LEFT JOIN categories c ON b.category_id = c.id 
-		WHERE 1=1`
+	SELECT b.id, b.title, b.author,
+	       COALESCE(b.isbn, '') as isbn,
+	       b.category_id,
+	       COALESCE(c.name, '') as category_name,
+	       COALESCE(b.publisher, '') as publisher,
+	       COALESCE(b.edition, '') as edition,
+	       COALESCE(b.published_year, 0) as published_year,
+	       b.quantity, b.available_copies,
+	       COALESCE(b.shelf, '') as shelf,
+	       COALESCE(b.status, 'available') as status,
+	       b.created_at
+	FROM books b
+	LEFT JOIN categories c ON b.category_id = c.id
+	WHERE 1=1`
 
 	var args []interface{}
 	argCount := 1

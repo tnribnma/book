@@ -12,7 +12,9 @@ type BorrowingRepository interface {
 	ReturnBook(ctx context.Context, bookID, userID int64) error
 	GetMyBorrowings(ctx context.Context, userID int64) ([]models.Borrowing, error)
 	GetOverdueBorrowings(ctx context.Context) ([]models.Borrowing, error)
-	HasActiveBorrowing(ctx context.Context, bookID, userID int64) (bool, error)  // ← NEW
+	HasActiveBorrowing(ctx context.Context, bookID, userID int64) (bool, error)  
+	CountActiveBorrowings(ctx context.Context, userID int64) (int, error)
+	HasOverdueBorrowing(ctx context.Context, userID int64) (bool, error)
 }
 
 type borrowingRepo struct {
@@ -95,6 +97,26 @@ func (r *borrowingRepo) ReturnBook(ctx context.Context, bookID, userID int64) er
 	}
 
 	return nil
+}
+
+func (r *borrowingRepo) CountActiveBorrowings(ctx context.Context, userID int64) (int, error) {
+	query := `
+		SELECT COUNT(*) FROM borrowings
+		WHERE user_id = $1 AND status IN ('borrowed', 'overdue')`
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&count)
+	return count, err
+}
+ 
+func (r *borrowingRepo) HasOverdueBorrowing(ctx context.Context, userID int64) (bool, error) {
+	query := `
+		SELECT COUNT(*) FROM borrowings
+		WHERE user_id = $1
+		  AND status = 'borrowed'
+		  AND due_date < NOW()`
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&count)
+	return count > 0, err
 }
 
 func (r *borrowingRepo) GetMyBorrowings(ctx context.Context, userID int64) ([]models.Borrowing, error) {

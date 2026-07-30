@@ -8,6 +8,11 @@ import (
 	"book-management/repository"
 )
 
+const (
+	maxActiveBorrows = 5  
+	loanDays         = 14 
+)
+
 type BorrowingService interface {
 	IssueBook(ctx context.Context, bookID, userID int64) error
 	ReturnBook(ctx context.Context, bookID, userID int64) error
@@ -18,12 +23,14 @@ type BorrowingService interface {
 type borrowingService struct {
 	borrowingRepo repository.BorrowingRepository
 	bookRepo      repository.BookRepository
+	fineStrategy  FineStrategy
 }
 
 func NewBorrowingService(borrowingRepo repository.BorrowingRepository, bookRepo repository.BookRepository) BorrowingService {
 	return &borrowingService{
 		borrowingRepo: borrowingRepo,
 		bookRepo:      bookRepo,
+		fineStrategy:  NewDailyFlatFine(10), 
 	}
 }
 
@@ -32,9 +39,24 @@ func (s *borrowingService) IssueBook(ctx context.Context, bookID, userID int64) 
 	if err != nil {
 		return fmt.Errorf("book not found")
 	}
-
 	if book.AvailableCopies <= 0 {
 		return fmt.Errorf("book is currently not available")
+	}
+
+	hasOverdue, err := s.borrowingRepo.HasOverdueBorrowing(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to check overdue status")
+	}
+	if hasOverdue {
+		return fmt.Errorf("you have overdue books; return them before borrowing more")
+	}
+
+	activeCount, err := s.borrowingRepo.CountActiveBorrowings(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to count active borrowings")
+	}
+	if activeCount >= maxActiveBorrows {
+		return fmt.Errorf("borrow limit reached (max %d books)", maxActiveBorrows)
 	}
 
 	hasActive, err := s.borrowingRepo.HasActiveBorrowing(ctx, bookID, userID)
@@ -48,22 +70,15 @@ func (s *borrowingService) IssueBook(ctx context.Context, bookID, userID int64) 
 	borrowing := &models.Borrowing{
 		BookID:  bookID,
 		UserID:  userID,
-		DueDate: time.Now().AddDate(0, 0, 14),
+		DueDate: time.Now().AddDate(0, 0, loanDays),
 		Status:  "borrowed",
 	}
 
-	if err := s.borrowingRepo.IssueBook(ctx, borrowing); err != nil {
-		return err
-	}
-
-	return s.bookRepo.UpdateAvailability(ctx, bookID, -1)
+	return s.borrowingRepo.IssueBook(ctx, borrowing)
 }
 
 func (s *borrowingService) ReturnBook(ctx context.Context, bookID, userID int64) error {
-	if err := s.borrowingRepo.ReturnBook(ctx, bookID, userID); err != nil {
-		return err
-	}
-	return s.bookRepo.UpdateAvailability(ctx, bookID, 1)
+	return s.borrowingRepo.ReturnBook(ctx, bookID, userID)
 }
 
 func (s *borrowingService) GetMyBorrowings(ctx context.Context, userID int64) ([]models.Borrowing, error) {
